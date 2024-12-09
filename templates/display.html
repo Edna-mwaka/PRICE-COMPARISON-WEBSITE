@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:v-bind="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Product Price Comparison Tool</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+        <style>
+            body {
+                margin: 0;
+                font-family: Arial, Helvetica, sans-serif;
+            }
+    
+            .topnav {
+                overflow: hidden;
+                background-color: palevioletred;
+            }
+    
+            .topnav a {
+                float: left;
+                color: black;
+                text-align: center;
+                padding: 14px 16px;
+                text-decoration: none;
+                font-size: 17px;
+            }
+    
+            .topnav a:hover {
+                background-color: #ddd;
+                color: black;
+            }
+    
+            .container {
+                position: relative;
+                text-align: center;
+                color: white;
+            }
+            .centered {
+                position: absolute;
+                font-size: xxx-large;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+            .top-left {
+                position: absolute;
+                font-size: xxx-large;
+                top: 8px;
+                left: 16px;
+            }
+            footer {
+                text-align: center;
+                padding-top: 10px;
+                padding-bottom: 4px;
+                background-color: palevioletred;
+                color: white;
+            }
+        </style>
+        <script>
+
+            var app = new Vue({
+                el: '#app',
+                data: {
+                    filter: '',
+                    currentSort: 'price',
+                    currentSortDir: 'asc',
+                    pageSize: 10,
+                    currentPage: 1,
+                    products: [],
+                },
+                computed: {
+                    filteredProducts: function () {
+                        return this.products.filter((product) => {
+                            return product.name.match(this.search)
+                        })
+                    }
+                },
+                methods: {
+        
+                    //Get all the cereals from the web service using Axios.
+                    loadAllProducts: function () {
+                        const localApp = this;
+        
+                        axios.get('/products')//Send GET request to products path
+                            .then(function (response) {//Request successful
+                                //Point cereals in data to returned array of cereals
+                                localApp.products = response.data.products;
+                                console.log(JSON.stringify(response.data.products));
+                            })
+        
+                    },
+                    loadAllLaptops: function () {
+                        const localApp = this;
+        
+                        axios.get('/laptops')//Send GET request to products path
+                            .then(function (response) {//Request successful
+                                //Point cereals in data to returned array of cereals
+                                localApp.laptops = response.data.laptops;
+                                console.log(JSON.stringify(response.data.laptops));
+                            })
+        
+                    },
+                    sort: function (s) {
+                        //if s == current sort, reverse
+                        if (s === this.currentSort) {
+                            this.currentSortDir = this.currentSortDir === 'asc' ? 'desc' : 'asc';
+                        }
+                        this.currentSort = s;
+                    },
+                    nextPage: function () {
+                        if ((this.currentPage * this.pageSize) < this.filteredProducts.length) this.currentPage++;
+                    },
+                    prevPage: function () {
+                        if (this.currentPage > 1) this.currentPage--;
+                    }
+        
+                },
+                watch: {
+                    filter() {
+                        console.log('reset to p1 due to filter');
+                        this.currentPage = 1;
+                    }
+                },
+                computed: {
+                    filteredProducts() {
+                        return this.products.filter(c => {
+                            if (this.filter == '') return true;
+                            return c.name.toLowerCase().indexOf(this.filter.toLowerCase()) >= 0;
+                        })
+                    },
+                    sortedProducts() {
+        
+                        return this.filteredProducts.sort((a, b) => {
+                            let modifier = 1;
+                            if (this.currentSortDir === 'desc') modifier = -1;
+                            if (a[this.currentSort] < b[this.currentSort]) return -1 * modifier;
+                            if (a[this.currentSort] > b[this.currentSort]) return 1 * modifier;
+                            return 0;
+                        }).filter((row, index) => {
+                            let start = (this.currentPage - 1) * this.pageSize;
+                            let end = this.currentPage * this.pageSize;
+                            if (index >= start && index < end) return true;
+                        });
+                    }
+                },
+                created: function () {//Vue lifecycle hook, called when data is loaded.
+                    //Load products from web service
+                    this.loadAllProducts();
+                    this.loadAllLaptops();
+        
+                    //Refresh products every 5 seconds
+                    setInterval(this.loadAllProducts, 5000);
+                    setInterval(this.loadAllLaptops,5000);
+                }
+            })
+        
+        </script>
+    </head>
+
+
+<body style="background-color:#F7DC6F;">
+
+    <div class="topnav">
+
+        <a class="active" href="home1.html">All Products</a>
+        <a class="active" href="Search.html">Search</a>
+        <a class="active" href="display.html">Display</a>
+    </div>
+    <header>
+        <h1>Comparison Results "{{ search_term }}"</h1>
+    </header>
+    <div class="mt-5">
+        <h3>Results</h3>
+        {% if jumia_products or kilimall_products %}
+        <h4>Jumia Products</h4>
+        {% if jumia_products %}
+        <ul class="list-group">
+          {% for name, details in jumia_products.items() %}
+          <li class="list-group-item">
+            {{ name }} - Price: {{ details.Price }}, Rating: {{ details.Rating }}, Link: <a href="{{details.Link}}" target="Link">{{details.Link}}</a> 
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>No results found on Jumia.</p>
+        {% endif %}
+        <h4>Kilimall Products</h4>
+        {% if kilimall_products %}
+        <ul class="list-group">
+          {% for name, details in kilimall_products.items() %}
+          <li class="list-group-item">
+            {{ name }} - Price: {{ details.Price }}, Rating: {{ details.Rating }}, Link: <a href="{{details.Link}}" target="Link">{{details.Link}}</a> 
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p>No results found on Kilimall.</p>
+        {% endif %}
+        {% else %}
+        <p>No results found.</p>
+        {% endif %}
+    </div>
+    <div class="price-info"><center>
+        <a href="{{ Link}}" target="_blank">View on Jumia</a>
+    </div>
+    <div class="price-info"><center>
+        <a href="{{ Link}}" target="_blank">View on Kilimall</a>
+    </div>
+  </body>
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <p><center> &copy;2024 Product Comparison System. All rights reserved.</p>
+                <p>Author: Edna Joannes<br>
+                    Contact us:<a href="mwakajoannes3@gmail.com" style="color: white;">mwakajoannes3@gmail.com</a></p></center>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
